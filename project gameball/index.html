@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spam Ball Breaker - Game Pemecah Balok</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at center, #14192b 0%, #0a0c16 100%);
+      color: #ffffff;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .game-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 460px;
+      height: 100vh;
+      max-height: 860px;
+      background: #0d111e;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(79, 140, 255, 0.15);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Top HUD */
+    .hud {
+      width: 100%;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(18, 24, 43, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 10;
+    }
+
+    .score-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .score-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8b9bb4;
+      font-weight: 600;
+    }
+
+    .score-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #00f0ff;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+      line-height: 1.1;
+    }
+
+    .high-score-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .high-score-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffd152;
+    }
+
+    .hud-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .speed-btn {
+      font-weight: bold;
+      font-size: 12px;
+      color: #00f0ff;
+      border-color: rgba(0, 240, 255, 0.3);
+      padding: 0 8px;
+      width: auto;
+      min-width: 42px;
+    }
+
+    .speed-btn.active {
+      background: rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+    }
+
+    /* Canvas Area */
+    .canvas-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #090c15;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* Bottom Control Bar */
+    .bottom-bar {
+      width: 100%;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(18, 24, 43, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 13px;
+      color: #8b9bb4;
+      z-index: 10;
+    }
+
+    .ball-count-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 4px 10px;
+      border-radius: 20px;
+      color: #00f0ff;
+      font-weight: 700;
+    }
+
+    .recall-btn {
+      background: rgba(255, 68, 102, 0.15);
+      border: 1px solid rgba(255, 68, 102, 0.35);
+      color: #ff5277;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      transition: all 0.2s;
+    }
+
+    .recall-btn:hover {
+      background: rgba(255, 68, 102, 0.3);
+    }
+
+    /* Overlay Modal */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 7, 13, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #151a2c;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ff4466;
+      margin-bottom: 12px;
+      text-shadow: 0 0 12px rgba(255, 68, 102, 0.5);
+    }
+
+    .modal-stats {
+      margin: 18px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .stat-row span:last-child {
+      font-weight: 700;
+      color: #00f0ff;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #00f0ff 0%, #0077ff 100%);
+      color: #050b18;
+      font-weight: 800;
+      font-size: 16px;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(0, 240, 255, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 240, 255, 0.6);
+    }
+
+    /* Start / Tutorial banner */
+    .hint-banner {
+      position: absolute;
+      top: 55%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(18, 24, 43, 0.9);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 12px 20px;
+      border-radius: 14px;
+      font-size: 13px;
+      color: #b0c4de;
+      text-align: center;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      z-index: 5;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .hint-banner.hide {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-wrapper">
+    <!-- Header HUD -->
+    <header class="hud">
+      <div class="score-box">
+        <span class="score-label">Ronde / Skor</span>
+        <span class="score-value" id="scoreDisplay">1</span>
+      </div>
+
+      <div class="high-score-box">
+        <span class="score-label">Skor Terbaik</span>
+        <span class="high-score-value" id="highScoreDisplay">1</span>
+      </div>
+
+      <div class="hud-controls">
+        <button class="icon-btn speed-btn" id="speedBtn" title="Kecepatan Bola">1x</button>
+        <button class="icon-btn" id="soundBtn" title="Suara">🔊</button>
+        <button class="icon-btn" id="restartBtn" title="Mulai Ulang">🔄</button>
+      </div>
+    </header>
+
+    <!-- Canvas Play Area -->
+    <div class="canvas-container" id="canvasContainer">
+      <canvas id="gameCanvas"></canvas>
+      <div class="hint-banner" id="hintBanner">
+        🎯 <strong>Tarik & Arahkan</strong> lalu lepas untuk menembak!<br>
+        Kumpulkan bola hijau <strong>+1</strong> untuk spam bola!
+      </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <footer class="bottom-bar">
+      <div class="ball-count-badge">
+        <span>⚪</span>
+        <span id="ballCountDisplay">x10</span>
+      </div>
+      <div id="statusTip" style="font-size: 12px; color: #6e7f98;">Tarik ke bawah atau arahkan untuk menembak</div>
+      <button class="recall-btn" id="recallBtn">⚡ Kumpulkan Bola</button>
+    </footer>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="gameOverModal">
+      <div class="modal-card">
+        <h2 class="modal-title">GAME OVER</h2>
+        <p style="color: #9aa9bf; font-size: 14px;">Balok telah menyentuh batas bawah!</p>
+        
+        <div class="modal-stats">
+          <div class="stat-row">
+            <span>Ronde Dicapai:</span>
+            <span id="finalRound">1</span>
+          </div>
+          <div class="stat-row">
+            <span>Total Bola Terkumpul:</span>
+            <span id="finalBalls">10</span>
+          </div>
+          <div class="stat-row">
+            <span>Balok Hancur:</span>
+            <span id="finalBricks">0</span>
+          </div>
+          <div class="stat-row">
+            <span>Skor Tertinggi:</span>
+            <span id="finalHighScore">1</span>
+          </div>
+        </div>
+
+        <button class="primary-btn" id="playAgainBtn">MAIN LAGI</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       SPAM BALL BREAKER (BBTAN / BALLZ STYLE)
+       - Turn-based aim & shoot mechanic
+       - Rapid ball streaming with raycast aiming guide
+       - Increasing ball counts (+1 items)
+       - Special items: Laser, Bomb, Splitter, Extra Balls
+       - Web Audio API Sound Synthesizer
+       ========================================================================= */
+
+    // --- Web Audio Synthesizer ---
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.combo = 0;
+        this.lastHitTime = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playShoot() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(450, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.04);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.04);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        } catch (e) {}
+      }
+
+      playHit() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          if (now - this.lastHitTime < 0.2) {
+            this.combo = Math.min(this.combo + 1, 24);
+          } else {
+            this.combo = 0;
+          }
+          this.lastHitTime = now;
+
+          // Pentatonic scale frequency calculation
+          const scale = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0, 880.0];
+          const freq = scale[this.combo % scale.length] * (1 + Math.floor(this.combo / scale.length) * 0.5);
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.9, now + 0.06);
+
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } catch (e) {}
+      }
+
+      playBreak() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.12);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } catch (e) {}
+      }
+
+      playPowerup() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.04);
+            gain.gain.setValueAtTime(0.06, now + i * 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + (i + 1) * 0.06);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.04);
+            osc.stop(now + (i + 1) * 0.06);
+          });
+        } catch (e) {}
+      }
+
+      playLaser() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(1200, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.18);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } catch (e) {}
+      }
+
+      playGameOver() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [350, 300, 250, 180].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, now + i * 0.12);
+            gain.gain.setValueAtTime(0.12, now + i * 0.12);
+            gain.gain.linearRampToValueAtTime(0.001, now + (i + 1) * 0.14);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.12);
+            osc.stop(now + (i + 1) * 0.14);
+          });
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundFX();
+
+    // --- Game Engine Constants & Variables ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvasContainer');
+
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const highScoreDisplay = document.getElementById('highScoreDisplay');
+    const ballCountDisplay = document.getElementById('ballCountDisplay');
+    const statusTip = document.getElementById('statusTip');
+    const speedBtn = document.getElementById('speedBtn');
+    const soundBtn = document.getElementById('soundBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const recallBtn = document.getElementById('recallBtn');
+    const hintBanner = document.getElementById('hintBanner');
+
+    const gameOverModal = document.getElementById('gameOverModal');
+    const finalRound = document.getElementById('finalRound');
+    const finalBalls = document.getElementById('finalBalls');
+    const finalBricks = document.getElementById('finalBricks');
+    const finalHighScore = document.getElementById('finalHighScore');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
+    // Grid Dimensions
+    const COLS = 7;
+    const ROWS = 9;
+    let cellWidth = 0;
+    let cellHeight = 0;
+    let boardTop = 20;
+    let boardBottom = 0;
+
+    // Game State
+    const STATES = { AIMING: 0, SHOOTING: 1, ROUND_TRANSITION: 2, GAME_OVER: 3 };
+    let gameState = STATES.AIMING;
+
+    let round = 1;
+    let highScore = parseInt(localStorage.getItem('spamball_high_score') || '1', 10);
+    let totalBricksDestroyed = 0;
+
+    // Ball Inventory & Physics
+    let totalBalls = 10; // Starting ball count (good spam feel from round 1!)
+    let ballsSpawned = 0;
+    let ballsInPlay = [];
+    let ballsLanded = 0;
+    let extraBallsCollected = 0;
+    let nextLaunchX = 0;
+    let currentLaunchX = 0;
+    let launchY = 0;
+    let hasFirstLanded = false;
+
+    // Ball speeds
+    const BASE_BALL_SPEED = 9;
+    let speedMultiplier = 1; // 1x, 2x, 4x
+    const BALL_RADIUS = 6;
+    const LAUNCH_INTERVAL = 3.5; // frame ticks between ball spawns
+    let launchTimer = 0;
+    let launchAngle = -Math.PI / 2;
+
+    // Aiming State
+    let isAiming = false;
+    let aimStart = { x: 0, y: 0 };
+    let aimCurrent = { x: 0, y: 0 };
+    let aimVector = { x: 0, y: -1 };
+
+    // Bricks & Items
+    let grid = []; // 2D array [row][col]
+    let particles = [];
+    let laserAnimations = [];
+    let floatTexts = [];
+
+    // Screen Shake
+    let screenShake = 0;
+
+    // --- Responsive Canvas Setup ---
+    function resizeCanvas() {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+
+      cellWidth = rect.width / COLS;
+      cellHeight = (rect.height - 110) / (ROWS + 1);
+      boardTop = 20;
+      boardBottom = rect.height - 55;
+      launchY = boardBottom - BALL_RADIUS - 2;
+
+      if (!currentLaunchX) {
+        currentLaunchX = rect.width / 2;
+        nextLaunchX = currentLaunchX;
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // --- Brick Colors based on Durability ---
+    function getBrickColors(hp, currentRound) {
+      const ratio = Math.min(hp / Math.max(currentRound * 1.5, 1), 1);
+      // Beautiful neon spectrum: Cyan -> Green -> Yellow -> Orange -> Magenta
+      if (ratio < 0.2) return { fill: '#00f0ff', stroke: '#70f7ff', text: '#002633', shadow: 'rgba(0, 240, 255, 0.4)' };
+      if (ratio < 0.4) return { fill: '#00ff88', stroke: '#88ffcc', text: '#00331a', shadow: 'rgba(0, 255, 136, 0.4)' };
+      if (ratio < 0.6) return { fill: '#ffd152', stroke: '#ffea9f', text: '#332600', shadow: 'rgba(255, 209, 82, 0.4)' };
+      if (ratio < 0.8) return { fill: '#ff8833', stroke: '#ffbb88', text: '#331500', shadow: 'rgba(255, 136, 51, 0.4)' };
+      return { fill: '#ff3366', stroke: '#ff99b3', text: '#330010', shadow: 'rgba(255, 51, 102, 0.5)' };
+    }
+
+    // --- Particle System ---
+    function spawnParticles(x, y, color, count = 8, speedScale = 1) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = (Math.random() * 4 + 1.5) * speedScale;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          radius: Math.random() * 3 + 1.5,
+          color: color,
+          alpha: 1,
+          decay: Math.random() * 0.03 + 0.02
+        });
+      }
+    }
+
+    function addFloatText(text, x, y, color = '#00ff88') {
+      floatTexts.push({
+        text: text,
+        x: x,
+        y: y,
+        vy: -1.5,
+        alpha: 1,
+        color: color
+      });
+    }
+
+    // --- Ball Class ---
+    class Ball {
+      constructor(x, y, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = BALL_RADIUS;
+        this.active = true;
+        this.landed = false;
+      }
+
+      update(substeps = 2) {
+        if (!this.active || this.landed) return;
+
+        const effectiveSpeedMultiplier = speedMultiplier;
+        const dt = effectiveSpeedMultiplier / substeps;
+
+        for (let step = 0; step < substeps; step++) {
+          this.x += this.vx * dt;
+          this.y += this.vy * dt;
+
+          const rect = container.getBoundingClientRect();
+          const width = rect.width;
+
+          // Wall Collisions
+          if (this.x - this.radius <= 0) {
+            this.x = this.radius;
+            this.vx = Math.abs(this.vx);
+            sound.playHit();
+          } else if (this.x + this.radius >= width) {
+            this.x = width - this.radius;
+            this.vx = -Math.abs(this.vx);
+            sound.playHit();
+          }
+
+          // Ceiling Collision
+          if (this.y - this.radius <= boardTop) {
+            this.y = boardTop + this.radius;
+            this.vy = Math.abs(this.vy);
+            sound.playHit();
+          }
+
+          // Floor Boundary Check (Landing)
+          if (this.y + this.radius >= boardBottom) {
+            this.y = boardBottom - this.radius;
+            this.active = false;
+            this.landed = true;
+            ballsLanded++;
+
+            if (!hasFirstLanded) {
+              hasFirstLanded = true;
+              nextLaunchX = Math.max(20, Math.min(width - 20, this.x));
+            }
+            return;
+          }
+
+          // Grid & Item Collisions
+          this.checkGridCollisions();
+        }
+      }
+
+      checkGridCollisions() {
+        const padding = 3;
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const item = grid[r][c];
+            if (!item) continue;
+
+            const bx = c * cellWidth + padding;
+            const by = boardTop + r * cellHeight + padding;
+            const bw = cellWidth - padding * 2;
+            const bh = cellHeight - padding * 2;
+
+            if (item.type === 'brick') {
+              // Circle vs Rect collision
+              const nearestX = Math.max(bx, Math.min(this.x, bx + bw));
+              const nearestY = Math.max(by, Math.min(this.y, by + bh));
+
+              const dx = this.x - nearestX;
+              const dy = this.y - nearestY;
+              const distSq = dx * dx + dy * dy;
+
+              if (distSq < this.radius * this.radius) {
+                // Determine collision normal
+                const overlapX = (bw / 2 + this.radius) - Math.abs(this.x - (bx + bw / 2));
+                const overlapY = (bh / 2 + this.radius) - Math.abs(this.y - (by + bh / 2));
+
+                if (overlapX < overlapY) {
+                  this.vx *= -1;
+                  this.x += (dx > 0 ? 1 : -1) * (this.radius - Math.abs(dx) + 0.1);
+                } else {
+                  this.vy *= -1;
+                  this.y += (dy > 0 ? 1 : -1) * (this.radius - Math.abs(dy) + 0.1);
+                }
+
+                // Damage Brick
+                item.hp -= 1;
+                item.hitAnim = 1.0;
+                spawnParticles(nearestX, nearestY, item.colors.fill, 3);
+                sound.playHit();
+
+                if (item.hp <= 0) {
+                  this.breakBrick(r, c, item, bx + bw / 2, by + bh / 2);
+                }
+                return;
+              }
+            } else if (item.type === 'triangle') {
+              // Triangle collision
+              const cx = bx + bw / 2;
+              const cy = by + bh / 2;
+              const dist = Math.hypot(this.x - cx, this.y - cy);
+              if (dist < bw / 2 + this.radius) {
+                // Bounce based on orientation
+                if (item.orientation === 'tl') {
+                  this.vx = Math.abs(this.vy);
+                  this.vy = Math.abs(this.vx);
+                } else if (item.orientation === 'tr') {
+                  this.vx = -Math.abs(this.vy);
+                  this.vy = Math.abs(this.vx);
+                } else if (item.orientation === 'bl') {
+                  this.vx = Math.abs(this.vy);
+                  this.vy = -Math.abs(this.vx);
+                } else {
+                  this.vx = -Math.abs(this.vy);
+                  this.vy = -Math.abs(this.vx);
+                }
+
+                item.hp -= 1;
+                item.hitAnim = 1.0;
+                spawnParticles(cx, cy, item.colors.fill, 3);
+                sound.playHit();
+
+                if (item.hp <= 0) {
+                  this.breakBrick(r, c, item, cx, cy);
+                }
+                return;
+              }
+            } else if (item.type === 'add_ball') {
+              // Collectable extra ball powerup
+              const cx = bx + bw / 2;
+              const cy = by + bh / 2;
+              const dist = Math.hypot(this.x - cx, this.y - cy);
+              if (dist < 14 + this.radius) {
+                grid[r][c] = null;
+                extraBallsCollected++;
+                sound.playPowerup();
+                spawnParticles(cx, cy, '#00ff88', 12, 1.2);
+                addFloatText('+1 BOLA', cx, cy, '#00ff88');
+                return;
+              }
+            } else if (item.type === 'laser') {
+              // Row/Column laser cleaner
+              const cx = bx + bw / 2;
+              const cy = by + bh / 2;
+              const dist = Math.hypot(this.x - cx, this.y - cy);
+              if (dist < 14 + this.radius) {
+                grid[r][c] = null;
+                triggerLaser(r, c, item.direction);
+                return;
+              }
+            } else if (item.type === 'bomb') {
+              // Bomb explosive
+              const cx = bx + bw / 2;
+              const cy = by + bh / 2;
+              const dist = Math.hypot(this.x - cx, this.y - cy);
+              if (dist < 14 + this.radius) {
+                grid[r][c] = null;
+                triggerBomb(r, c);
+                return;
+              }
+            } else if (item.type === 'splitter') {
+              // Spam Multiplier: splits passing ball into 2!
+              const cx = bx + bw / 2;
+              const cy = by + bh / 2;
+              const dist = Math.hypot(this.x - cx, this.y - cy);
+              if (dist < 14 + this.radius && !this.justSplit) {
+                this.justSplit = true;
+                item.hits = (item.hits || 0) + 1;
+                sound.playPowerup();
+                spawnParticles(cx, cy, '#ff00ea', 8);
+
+                // Spawn a clone ball flying in slightly divergent angle
+                const cloneVx = this.vx * Math.cos(0.25) - this.vy * Math.sin(0.25);
+                const cloneVy = this.vx * Math.sin(0.25) + this.vy * Math.cos(0.25);
+                const clone = new Ball(this.x, this.y, cloneVx, cloneVy);
+                clone.justSplit = true;
+                ballsInPlay.push(clone);
+
+                if (item.hits >= 5) {
+                  grid[r][c] = null;
+                }
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      breakBrick(r, c, item, cx, cy) {
+        grid[r][c] = null;
+        totalBricksDestroyed++;
+        sound.playBreak();
+        spawnParticles(cx, cy, item.colors.fill, 18, 1.8);
+        screenShake = Math.max(screenShake, 4);
+      }
+
+      draw() {
+        if (!this.active && !this.landed) return;
+
+        // Smooth roll towards nextLaunchX if already landed
+        if (this.landed) {
+          const dx = nextLaunchX - this.x;
+          if (Math.abs(dx) > 1) {
+            this.x += dx * 0.15;
+          }
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 6;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // --- Special Items Effects ---
+    function triggerLaser(row, col, direction) {
+      sound.playLaser();
+      screenShake = 6;
+      const rect = container.getBoundingClientRect();
+
+      if (direction === 'row' || direction === 'cross') {
+        laserAnimations.push({
+          type: 'row',
+          y: boardTop + row * cellHeight + cellHeight / 2,
+          life: 1.0,
+          color: '#00f0ff'
+        });
+
+        // Damage entire row
+        for (let c = 0; c < COLS; c++) {
+          const block = grid[row][c];
+          if (block && (block.type === 'brick' || block.type === 'triangle')) {
+            block.hp = Math.max(0, block.hp - Math.ceil(round * 0.6));
+            spawnParticles(c * cellWidth + cellWidth / 2, boardTop + row * cellHeight + cellHeight / 2, '#00f0ff', 4);
+            if (block.hp <= 0) {
+              grid[row][c] = null;
+              totalBricksDestroyed++;
+            }
+          }
+        }
+      }
+
+      if (direction === 'col' || direction === 'cross') {
+        laserAnimations.push({
+          type: 'col',
+          x: col * cellWidth + cellWidth / 2,
+          life: 1.0,
+          color: '#00f0ff'
+        });
+
+        // Damage entire column
+        for (let r = 0; r < ROWS; r++) {
+          const block = grid[r][col];
+          if (block && (block.type === 'brick' || block.type === 'triangle')) {
+            block.hp = Math.max(0, block.hp - Math.ceil(round * 0.6));
+            spawnParticles(col * cellWidth + cellWidth / 2, boardTop + r * cellHeight + cellHeight / 2, '#00f0ff', 4);
+            if (block.hp <= 0) {
+              grid[r][col] = null;
+              totalBricksDestroyed++;
+            }
+          }
+        }
+      }
+    }
+
+    function triggerBomb(row, col) {
+      sound.playBreak();
+      screenShake = 10;
+      const cx = col * cellWidth + cellWidth / 2;
+      const cy = boardTop + row * cellHeight + cellHeight / 2;
+
+      spawnParticles(cx, cy, '#ff4466', 30, 2.5);
+      addFloatText('BOOM!', cx, cy, '#ff4466');
+
+      // 3x3 Blast Radius
+      for (let r = Math.max(0, row - 1); r <= Math.min(ROWS - 1, row + 1); r++) {
+        for (let c = Math.max(0, col - 1); c <= Math.min(COLS - 1, col + 1); c++) {
+          const block = grid[r][c];
+          if (block && (block.type === 'brick' || block.type === 'triangle')) {
+            block.hp = Math.max(0, block.hp - Math.ceil(round * 0.8));
+            spawnParticles(c * cellWidth + cellWidth / 2, boardTop + r * cellHeight + cellHeight / 2, '#ffd152', 6);
+            if (block.hp <= 0) {
+              grid[r][c] = null;
+              totalBricksDestroyed++;
+            }
+          }
+        }
+      }
+    }
+
+    // --- Grid Setup & Spawning ---
+    function initGrid() {
+      grid = [];
+      for (let r = 0; r < ROWS; r++) {
+        grid[r] = new Array(COLS).fill(null);
+      }
+      // Initial 2 rows
+      spawnNewRow(1);
+      spawnNewRow(1);
+    }
+
+    function spawnNewRow(currentRound) {
+      // First, shift all existing rows down by 1
+      for (let r = ROWS - 1; r > 0; r--) {
+        for (let c = 0; c < COLS; c++) {
+          grid[r][c] = grid[r - 1][c];
+        }
+      }
+      grid[0] = new Array(COLS).fill(null);
+
+      // Check if any block moved to bottom danger row (Row index ROWS - 1)
+      for (let c = 0; c < COLS; c++) {
+        const item = grid[ROWS - 1][c];
+        if (item && (item.type === 'brick' || item.type === 'triangle')) {
+          triggerGameOver();
+          return;
+        }
+      }
+
+      // Decide how many items in this row (typically 2 to 5)
+      const numItems = Math.floor(Math.random() * 3) + 2;
+      const colsToFill = [];
+      while (colsToFill.length < numItems) {
+        const col = Math.floor(Math.random() * COLS);
+        if (!colsToFill.includes(col)) colsToFill.push(col);
+      }
+
+      // Always guarantee at least one "+1 Ball" item per row so player can SPAM BALLS!
+      const addBallCol = colsToFill[0];
+      grid[0][addBallCol] = { type: 'add_ball', pulse: 0 };
+
+      // Fill remaining chosen cols with bricks and special items
+      for (let i = 1; i < colsToFill.length; i++) {
+        const c = colsToFill[i];
+        const roll = Math.random();
+
+        if (roll < 0.12) {
+          // Laser item
+          const directions = ['row', 'col', 'cross'];
+          grid[0][c] = {
+            type: 'laser',
+            direction: directions[Math.floor(Math.random() * directions.length)],
+            pulse: 0
+          };
+        } else if (roll < 0.20) {
+          // Bomb item
+          grid[0][c] = { type: 'bomb', pulse: 0 };
+        } else if (roll < 0.28) {
+          // Multiplier Splitter item
+          grid[0][c] = { type: 'splitter', hits: 0, pulse: 0 };
+        } else if (roll < 0.40) {
+          // Triangle brick
+          const orientations = ['tl', 'tr', 'bl', 'br'];
+          const hp = Math.random() < 0.25 ? currentRound * 2 : currentRound;
+          grid[0][c] = {
+            type: 'triangle',
+            orientation: orientations[Math.floor(Math.random() * orientations.length)],
+            hp: hp,
+            maxHp: hp,
+            hitAnim: 0,
+            colors: getBrickColors(hp, currentRound)
+          };
+        } else {
+          // Normal Square Brick
+          const isHard = Math.random() < 0.2;
+          const hp = isHard ? currentRound * 2 : currentRound;
+          grid[0][c] = {
+            type: 'brick',
+            hp: hp,
+            maxHp: hp,
+            hitAnim: 0,
+            colors: getBrickColors(hp, currentRound)
+          };
+        }
+      }
+    }
+
+    // --- Raycasting for Trajectory Guide ---
+    function calculateTrajectory(originX, originY, dirX, dirY) {
+      const rect = container.getBoundingClientRect();
+      const width = rect.width;
+      const points = [{ x: originX, y: originY }];
+
+      let curX = originX;
+      let curY = originY;
+      let vx = dirX;
+      let vy = dirY;
+
+      // Simulate up to 2 bounces
+      for (let bounce = 0; bounce < 2; bounce++) {
+        let minT = Infinity;
+        let hitType = null; // 'left', 'right', 'top', 'block'
+        let hitNormal = { x: 0, y: 0 };
+
+        // Check Left Wall
+        if (vx < 0) {
+          const t = (BALL_RADIUS - curX) / vx;
+          if (t > 0 && t < minT) {
+            minT = t;
+            hitType = 'left';
+            hitNormal = { x: 1, y: 0 };
+          }
+        }
+        // Check Right Wall
+        if (vx > 0) {
+          const t = (width - BALL_RADIUS - curX) / vx;
+          if (t > 0 && t < minT) {
+            minT = t;
+            hitType = 'right';
+            hitNormal = { x: -1, y: 0 };
+          }
+        }
+        // Check Top Ceiling
+        if (vy < 0) {
+          const t = (boardTop + BALL_RADIUS - curY) / vy;
+          if (t > 0 && t < minT) {
+            minT = t;
+            hitType = 'top';
+            hitNormal = { x: 0, y: 1 };
+          }
+        }
+
+        // Check Bricks
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const block = grid[r][c];
+            if (!block || (block.type !== 'brick' && block.type !== 'triangle')) continue;
+
+            const bx = c * cellWidth + 2;
+            const by = boardTop + r * cellHeight + 2;
+            const bw = cellWidth - 4;
+            const bh = cellHeight - 4;
+
+            // Simplified AABB ray intersection expanded by BALL_RADIUS
+            const minX = bx - BALL_RADIUS;
+            const maxX = bx + bw + BALL_RADIUS;
+            const minY = by - BALL_RADIUS;
+            const maxY = by + bh + BALL_RADIUS;
+
+            let tNearX = (minX - curX) / vx;
+            let tFarX = (maxX - curX) / vx;
+            if (tNearX > tFarX) [tNearX, tFarX] = [tFarX, tNearX];
+
+            let tNearY = (minY - curY) / vy;
+            let tFarY = (maxY - curY) / vy;
+            if (tNearY > tFarY) [tNearY, tFarY] = [tFarY, tNearY];
+
+            const tEnter = Math.max(tNearX, tNearY);
+            const tExit = Math.min(tFarX, tFarY);
+
+            if (tEnter < tExit && tEnter > 0.05 && tEnter < minT) {
+              minT = tEnter;
+              hitType = 'block';
+              if (tNearX > tNearY) {
+                hitNormal = { x: vx > 0 ? -1 : 1, y: 0 };
+              } else {
+                hitNormal = { x: 0, y: vy > 0 ? -1 : 1 };
+              }
+            }
+          }
+        }
+
+        if (minT === Infinity || minT > 1000) break;
+
+        curX += vx * minT;
+        curY += vy * minT;
+        points.push({ x: curX, y: curY });
+
+        // Reflect velocity
+        const dot = vx * hitNormal.x + vy * hitNormal.y;
+        vx = vx - 2 * dot * hitNormal.x;
+        vy = vy - 2 * dot * hitNormal.y;
+      }
+
+      return points;
+    }
+
+    // --- Input Handlers (Mouse & Touch) ---
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function onPointerDown(e) {
+      if (gameState !== STATES.AIMING) return;
+      sound.init();
+
+      const pos = getPointerPos(e);
+      isAiming = true;
+      aimStart = pos;
+      aimCurrent = pos;
+
+      hintBanner.classList.add('hide');
+    }
+
+    function onPointerMove(e) {
+      if (!isAiming || gameState !== STATES.AIMING) return;
+      aimCurrent = getPointerPos(e);
+
+      // Slingshot / Direct aim: Vector from launch point towards pointer or dragged opposite
+      let dx = aimCurrent.x - currentLaunchX;
+      let dy = aimCurrent.y - launchY;
+
+      // If user drags downward (slingshot mode), invert
+      if (dy > 15) {
+        dx = -dx;
+        dy = -dy;
+      }
+
+      const len = Math.hypot(dx, dy);
+      if (len > 20) {
+        let angle = Math.atan2(dy, dx);
+
+        // Clamp angle so it doesn't shoot horizontally or downward
+        const minAngle = -Math.PI * 0.94; // ~170 deg
+        const maxAngle = -Math.PI * 0.06; // ~10 deg
+
+        if (angle > 0) angle = -Math.PI / 2; // Default upwards if dragged wrong
+        angle = Math.max(minAngle, Math.min(maxAngle, angle));
+
+        aimVector = {
+          x: Math.cos(angle),
+          y: Math.sin(angle)
+        };
+      }
+    }
+
+    function onPointerUp() {
+      if (!isAiming || gameState !== STATES.AIMING) return;
+      isAiming = false;
+
+      // Start firing balls!
+      launchBalls();
+    }
+
+    canvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+    window.addEventListener('touchmove', (e) => {
+      if (isAiming) e.preventDefault();
+      onPointerMove(e);
+    }, { passive: false });
+    window.addEventListener('touchend', onPointerUp);
+
+    // --- Launch & Turn System ---
+    function launchBalls() {
+      gameState = STATES.SHOOTING;
+      ballsSpawned = 0;
+      ballsLanded = 0;
+      extraBallsCollected = 0;
+      hasFirstLanded = false;
+      ballsInPlay = [];
+      launchTimer = 0;
+
+      recallBtn.style.display = 'block';
+      statusTip.textContent = 'Menembak ' + totalBalls + ' bola...';
+    }
+
+    function recallAllBalls() {
+      if (gameState !== STATES.SHOOTING) return;
+      // Immediately land all active balls
+      ballsInPlay.forEach(b => {
+        b.active = false;
+        b.landed = true;
+      });
+      ballsLanded = totalBalls;
+      ballsSpawned = totalBalls;
+    }
+
+    function finishTurn() {
+      gameState = STATES.ROUND_TRANSITION;
+      recallBtn.style.display = 'none';
+
+      // Update total balls for next round
+      totalBalls += extraBallsCollected;
+      currentLaunchX = nextLaunchX;
+
+      // Advance round
+      round++;
+      scoreDisplay.textContent = round;
+      if (round > highScore) {
+        highScore = round;
+        highScoreDisplay.textContent = highScore;
+        localStorage.setItem('spamball_high_score', highScore);
+      }
+
+      ballCountDisplay.textContent = 'x' + totalBalls;
+      statusTip.textContent = 'Giliran Anda!';
+
+      // Spawn new wave
+      setTimeout(() => {
+        if (gameState !== STATES.GAME_OVER) {
+          spawnNewRow(round);
+          if (gameState !== STATES.GAME_OVER) {
+            gameState = STATES.AIMING;
+          }
+        }
+      }, 250);
+    }
+
+    function triggerGameOver() {
+      gameState = STATES.GAME_OVER;
+      sound.playGameOver();
+
+      finalRound.textContent = round;
+      finalBalls.textContent = totalBalls;
+      finalBricks.textContent = totalBricksDestroyed;
+      finalHighScore.textContent = highScore;
+
+      gameOverModal.classList.add('active');
+    }
+
+    function restartGame() {
+      gameOverModal.classList.remove('active');
+      round = 1;
+      totalBalls = 10;
+      totalBricksDestroyed = 0;
+      extraBallsCollected = 0;
+      speedMultiplier = 1;
+      speedBtn.textContent = '1x';
+      speedBtn.classList.remove('active');
+
+      scoreDisplay.textContent = round;
+      highScoreDisplay.textContent = highScore;
+      ballCountDisplay.textContent = 'x' + totalBalls;
+      statusTip.textContent = 'Tarik ke bawah atau arahkan untuk menembak';
+
+      ballsInPlay = [];
+      particles = [];
+      laserAnimations = [];
+      floatTexts = [];
+
+      const rect = container.getBoundingClientRect();
+      currentLaunchX = rect.width / 2;
+      nextLaunchX = currentLaunchX;
+
+      initGrid();
+      gameState = STATES.AIMING;
+      recallBtn.style.display = 'none';
+      hintBanner.classList.remove('hide');
+    }
+
+    // --- Controls & Buttons ---
+    speedBtn.addEventListener('click', () => {
+      sound.init();
+      if (speedMultiplier === 1) {
+        speedMultiplier = 2;
+        speedBtn.textContent = '2x';
+        speedBtn.classList.add('active');
+      } else if (speedMultiplier === 2) {
+        speedMultiplier = 4;
+        speedBtn.textContent = '4x';
+        speedBtn.classList.add('active');
+      } else {
+        speedMultiplier = 1;
+        speedBtn.textContent = '1x';
+        speedBtn.classList.remove('active');
+      }
+    });
+
+    soundBtn.addEventListener('click', () => {
+      sound.init();
+      sound.muted = !sound.muted;
+      soundBtn.textContent = sound.muted ? '🔇' : '🔊';
+    });
+
+    restartBtn.addEventListener('click', () => {
+      sound.init();
+      if (confirm('Mulai ulang permainan?')) {
+        restartGame();
+      }
+    });
+
+    recallBtn.addEventListener('click', () => {
+      sound.init();
+      recallAllBalls();
+    });
+
+    playAgainBtn.addEventListener('click', () => {
+      sound.init();
+      restartGame();
+    });
+
+    // --- Rendering Helpers ---
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    // --- Main Game Loop ---
+    let lastTime = performance.now();
+
+    function gameLoop(currentTime) {
+      requestAnimationFrame(gameLoop);
+
+      const delta = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+
+      const rect = container.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      // Screen Shake update
+      ctx.save();
+      if (screenShake > 0) {
+        const shakeX = (Math.random() - 0.5) * screenShake;
+        const shakeY = (Math.random() - 0.5) * screenShake;
+        ctx.translate(shakeX, shakeY);
+        screenShake = Math.max(0, screenShake - 0.5);
+      }
+
+      // Clear Canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Background subtle grid lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+      ctx.lineWidth = 1;
+      for (let c = 1; c < COLS; c++) {
+        ctx.beginPath();
+        ctx.moveTo(c * cellWidth, boardTop);
+        ctx.lineTo(c * cellWidth, boardBottom);
+        ctx.stroke();
+      }
+
+      // Red Danger Line at Bottom
+      ctx.strokeStyle = 'rgba(255, 68, 102, 0.35)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, boardBottom);
+      ctx.lineTo(width, boardBottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 1. Spawning Balls in Stream during SHOOTING
+      if (gameState === STATES.SHOOTING) {
+        if (ballsSpawned < totalBalls) {
+          launchTimer += speedMultiplier;
+          if (launchTimer >= LAUNCH_INTERVAL) {
+            launchTimer = 0;
+            const ballVx = aimVector.x * BASE_BALL_SPEED;
+            const ballVy = aimVector.y * BASE_BALL_SPEED;
+            ballsInPlay.push(new Ball(currentLaunchX, launchY, ballVx, ballVy));
+            ballsSpawned++;
+            sound.playShoot();
+          }
+        }
+      }
+
+      // 2. Update & Draw Balls
+      let activeCount = 0;
+      for (let i = 0; i < ballsInPlay.length; i++) {
+        const b = ballsInPlay[i];
+        b.update();
+        b.draw();
+        if (b.active) activeCount++;
+      }
+
+      // Check if turn finished
+      if (gameState === STATES.SHOOTING && ballsSpawned >= totalBalls && activeCount === 0) {
+        finishTurn();
+      }
+
+      // 3. Draw Grid Elements (Bricks, Items)
+      const padding = 3;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const item = grid[r][c];
+          if (!item) continue;
+
+          const bx = c * cellWidth + padding;
+          const by = boardTop + r * cellHeight + padding;
+          const bw = cellWidth - padding * 2;
+          const bh = cellHeight - padding * 2;
+          const cx = bx + bw / 2;
+          const cy = by + bh / 2;
+
+          if (item.type === 'brick') {
+            item.colors = getBrickColors(item.hp, round);
+            ctx.save();
+            drawRoundedRect(ctx, bx, by, bw, bh, 8);
+            ctx.fillStyle = item.colors.fill;
+            ctx.shadowColor = item.colors.shadow;
+            ctx.shadowBlur = item.hitAnim > 0 ? 12 : 5;
+            ctx.fill();
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = item.colors.stroke;
+            ctx.stroke();
+
+            // Hit Flash
+            if (item.hitAnim > 0) {
+              ctx.fillStyle = `rgba(255, 255, 255, ${item.hitAnim * 0.6})`;
+              ctx.fill();
+              item.hitAnim = Math.max(0, item.hitAnim - 0.1);
+            }
+
+            // Number Text
+            ctx.fillStyle = item.colors.text;
+            ctx.font = `bold ${Math.max(12, Math.floor(bh * 0.42))}px 'Segoe UI', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(item.hp, cx, cy + 1);
+            ctx.restore();
+
+          } else if (item.type === 'triangle') {
+            item.colors = getBrickColors(item.hp, round);
+            ctx.save();
+            ctx.beginPath();
+            if (item.orientation === 'tl') {
+              ctx.moveTo(bx, by);
+              ctx.lineTo(bx + bw, by);
+              ctx.lineTo(bx, by + bh);
+            } else if (item.orientation === 'tr') {
+              ctx.moveTo(bx, by);
+              ctx.lineTo(bx + bw, by);
+              ctx.lineTo(bx + bw, by + bh);
+            } else if (item.orientation === 'bl') {
+              ctx.moveTo(bx, by);
+              ctx.lineTo(bx, by + bh);
+              ctx.lineTo(bx + bw, by + bh);
+            } else { // 'br'
+              ctx.moveTo(bx + bw, by);
+              ctx.lineTo(bx + bw, by + bh);
+              ctx.lineTo(bx, by + bh);
+            }
+            ctx.closePath();
+
+            ctx.fillStyle = item.colors.fill;
+            ctx.shadowColor = item.colors.shadow;
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.strokeStyle = item.colors.stroke;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Number
+            ctx.fillStyle = item.colors.text;
+            ctx.font = `bold ${Math.max(10, Math.floor(bh * 0.36))}px 'Segoe UI', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(item.hp, cx, cy);
+            ctx.restore();
+
+          } else if (item.type === 'add_ball') {
+            // Glowing Green Ball Adder Ring
+            item.pulse = (item.pulse || 0) + 0.05;
+            const pulseScale = 1 + Math.sin(item.pulse) * 0.08;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12 * pulseScale, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.15)';
+            ctx.fill();
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = '#00ff88';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+
+            // Inner circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            // +1 label
+            ctx.fillStyle = '#00ff88';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('+1', cx, cy - 14);
+            ctx.restore();
+
+          } else if (item.type === 'laser') {
+            // Laser item
+            ctx.save();
+            drawRoundedRect(ctx, bx + 4, by + 4, bw - 8, bh - 8, 8);
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.2)';
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#00f0ff';
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.stroke();
+
+            // Icon
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(item.direction === 'row' ? '↔' : (item.direction === 'col' ? '↕' : '✚'), cx, cy);
+            ctx.restore();
+
+          } else if (item.type === 'bomb') {
+            // Bomb item
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 68, 102, 0.25)';
+            ctx.strokeStyle = '#ff4466';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#ff4466';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('💣', cx, cy);
+            ctx.restore();
+
+          } else if (item.type === 'splitter') {
+            // Multiplier / Splitter
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 0, 234, 0.2)';
+            ctx.strokeStyle = '#ff00ea';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#ff00ea';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('x2', cx, cy);
+            ctx.restore();
+          }
+        }
+      }
+
+      // 4. Draw Laser Animations
+      for (let i = laserAnimations.length - 1; i >= 0; i--) {
+        const l = laserAnimations[i];
+        ctx.save();
+        ctx.strokeStyle = l.color;
+        ctx.lineWidth = l.life * 8;
+        ctx.shadowColor = l.color;
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        if (l.type === 'row') {
+          ctx.moveTo(0, l.y);
+          ctx.lineTo(width, l.y);
+        } else {
+          ctx.moveTo(l.x, boardTop);
+          ctx.lineTo(l.x, boardBottom);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        l.life -= 0.05;
+        if (l.life <= 0) laserAnimations.splice(i, 1);
+      }
+
+      // 5. Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= p.decay;
+
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 6. Draw Floating Texts
+      for (let i = floatTexts.length - 1; i >= 0; i--) {
+        const ft = floatTexts[i];
+        ft.y += ft.vy;
+        ft.alpha -= 0.02;
+        if (ft.alpha <= 0) {
+          floatTexts.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = ft.alpha;
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+
+      // 7. Draw Aiming Trajectory Guide
+      if (gameState === STATES.AIMING && isAiming) {
+        const points = calculateTrajectory(currentLaunchX, launchY, aimVector.x, aimVector.y);
+
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 6]);
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 8;
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.stroke();
+
+        // Target End Circle
+        if (points.length > 1) {
+          const lastPt = points[points.length - 1];
+          ctx.beginPath();
+          ctx.arc(lastPt.x, lastPt.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#00f0ff';
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // 8. Draw Launch Base & Ball Count
+      if (gameState === STATES.AIMING) {
+        // Base glowing ring
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(currentLaunchX, launchY, BALL_RADIUS + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Main ready ball
+        ctx.beginPath();
+        ctx.arc(currentLaunchX, launchY, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+
+        // Text label xBallCount above launch ball
+        ctx.fillStyle = '#00f0ff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('x' + totalBalls, currentLaunchX, launchY - 14);
+        ctx.restore();
+      }
+
+      // Draw Marker where balls are landing if shooting
+      if (gameState === STATES.SHOOTING && hasFirstLanded) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(nextLaunchX, launchY, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.restore(); // restore screenshake
+    }
+
+    // --- Start Initial Game ---
+    resizeCanvas();
+    initGrid();
+    highScoreDisplay.textContent = highScore;
+    ballCountDisplay.textContent = 'x' + totalBalls;
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
